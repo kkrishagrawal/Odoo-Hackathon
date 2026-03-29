@@ -132,6 +132,12 @@ type ExpenseStats = {
 export default function AdminDashboardPage() {
   const router = useRouter();
 
+  const pageShellClassName = "min-h-dvh px-4 py-10 lg:py-14";
+  const pageBackgroundStyle = {
+    background:
+      "radial-gradient(circle at 15% 8%, rgba(138, 160, 186, 0.12), transparent 34%), repeating-linear-gradient(to right, transparent 0, transparent 49px, rgba(255, 255, 255, 0.018) 49px, rgba(255, 255, 255, 0.018) 50px), var(--bg)",
+  };
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teamUsers, setTeamUsers] = useState<ManagedUser[]>([]);
   const [rules, setRules] = useState<ApprovalRule[]>([]);
@@ -627,7 +633,7 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <main className="min-h-dvh px-4 py-10 lg:py-14">
+      <main className={pageShellClassName} style={pageBackgroundStyle}>
         <div className="mx-auto w-full max-w-[1080px] rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 text-sm text-[var(--muted)] shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           Loading admin dashboard...
         </div>
@@ -637,7 +643,7 @@ export default function AdminDashboardPage() {
 
   if (error || !user) {
     return (
-      <main className="min-h-dvh px-4 py-10 lg:py-14">
+      <main className={pageShellClassName} style={pageBackgroundStyle}>
         <div className="mx-auto w-full max-w-[760px] rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h1 className="text-2xl font-semibold text-[var(--chalk)]">Admin dashboard</h1>
           <p className="mt-3 text-sm text-rose-300">{error || "Unable to load admin profile."}</p>
@@ -650,7 +656,7 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <main className="min-h-dvh bg-[radial-gradient(circle_at_top_right,rgba(138,160,186,0.15),transparent_45%)] px-4 py-10 lg:py-14">
+    <main className={pageShellClassName} style={pageBackgroundStyle}>
       <div className="mx-auto grid w-full max-w-[1140px] gap-5">
         <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,29,0.97),rgba(11,15,20,0.99))] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.34)] lg:p-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -755,23 +761,6 @@ export default function AdminDashboardPage() {
             )}
           </article>
         </section>
-
-        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
-          <h2 className="text-lg font-semibold text-[var(--chalk)]">Approval rules</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Click any user row in Managed users to open the approval-rule dialog for that user.
-          </p>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
-              Select a user in the table below to configure approvals in a popup dialog.
-            </div>
-            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
-              Rule coverage is visible in the Managed users table, so you can quickly identify users without an active flow.
-            </div>
-          </div>
-        </section>
-
         <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h2 className="text-lg font-semibold text-[var(--chalk)]">Saved approval rules</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
