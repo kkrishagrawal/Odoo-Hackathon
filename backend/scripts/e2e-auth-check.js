@@ -4,7 +4,7 @@ const { PrismaClient } = require("@prisma/client");
 
 const prisma = new PrismaClient();
 
-const base = "http://localhost:3001/api/v1";
+const base = process.env.API_BASE_URL;
 const stamp = Date.now();
 const email = `qa.${stamp}@example.com`;
 const password = "Test@12345";

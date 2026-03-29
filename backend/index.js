@@ -56,6 +56,4 @@ app.use("/api/v1", apiRouter);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(env.PORT, () => {
-  console.log(`Backend API listening on http://localhost:${env.PORT}`);
-});
+module.exports = app;
