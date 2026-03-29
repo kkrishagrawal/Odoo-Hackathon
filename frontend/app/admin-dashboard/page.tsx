@@ -121,12 +121,27 @@ type CreateApprovalRuleFieldErrors = {
   approvers?: string[];
 };
 
+type ExpenseStats = {
+  baseCurrency: string;
+  pendingByCurrency: Record<string, number>;
+  approvedByCurrency: Record<string, number>;
+  pendingTotalConverted: number;
+  approvedTotalConverted: number;
+};
+
 export default function AdminDashboardPage() {
   const router = useRouter();
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [teamUsers, setTeamUsers] = useState<ManagedUser[]>([]);
   const [rules, setRules] = useState<ApprovalRule[]>([]);
+  const [expenseStats, setExpenseStats] = useState<ExpenseStats>({
+    baseCurrency: "INR",
+    pendingByCurrency: {},
+    approvedByCurrency: {},
+    pendingTotalConverted: 0,
+    approvedTotalConverted: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -207,9 +222,10 @@ export default function AdminDashboardPage() {
           throw new ApiError("Only admin users can access this page", 403, "FORBIDDEN");
         }
 
-        const [usersResponse, rulesResponse] = await Promise.all([
+        const [usersResponse, rulesResponse, statsResponse] = await Promise.all([
           apiFetch<UsersResponse>("/users", { method: "GET" }),
           apiFetch<ApprovalRulesResponse>("/approval-rules", { method: "GET" }),
+          apiFetch<{ stats: ExpenseStats }>("/expenses/stats", { method: "GET" }),
         ]);
 
         if (!isMounted) {
@@ -219,6 +235,7 @@ export default function AdminDashboardPage() {
         setUser(meResponse.user);
         setTeamUsers(usersResponse.users);
         setRules(rulesResponse.rules);
+        setExpenseStats(statsResponse.stats);
 
         setRuleTargetUserId((previous) => previous || usersResponse.users[0]?.id || "");
 
@@ -678,7 +695,7 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <article className="rounded-2xl border border-white/10 bg-[rgba(12,16,22,0.9)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
             <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Managers</p>
             <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.managerCount}</p>
@@ -694,6 +711,48 @@ export default function AdminDashboardPage() {
           <article className="rounded-2xl border border-[rgba(237,176,97,0.35)] bg-[rgba(47,34,18,0.5)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
             <p className="text-xs uppercase tracking-[0.08em] text-[rgba(237,202,141,0.85)]">Users without Rules</p>
             <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.usersWithoutRuleCount}</p>
+          </article>
+          <article className="rounded-2xl border border-[rgba(237,176,97,0.35)] bg-[rgba(47,34,18,0.5)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[rgba(237,202,141,0.85)]">Pending Approval</p>
+            {Object.keys(expenseStats.pendingByCurrency).length > 0 ? (
+              <div className="mt-2 space-y-1">
+                {Object.entries(expenseStats.pendingByCurrency).map(([cur, amt]) => (
+                  <p key={cur} className="text-sm text-[var(--chalk)]">
+                    <span className="font-mono text-[rgba(237,202,141,0.85)]">{cur}</span>{" "}
+                    {(amt as number).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </p>
+                ))}
+                <div className="mt-2 border-t border-white/10 pt-2">
+                  <p className="text-xs uppercase tracking-[0.06em] text-[var(--muted)]">Total in {expenseStats.baseCurrency}</p>
+                  <p className="text-xl font-semibold text-[var(--chalk)]">
+                    {expenseStats.baseCurrency} {expenseStats.pendingTotalConverted.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{expenseStats.baseCurrency} 0</p>
+            )}
+          </article>
+          <article className="rounded-2xl border border-[rgba(114,176,134,0.38)] bg-[rgba(15,32,25,0.58)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[rgba(165,209,177,0.84)]">Approved Total</p>
+            {Object.keys(expenseStats.approvedByCurrency).length > 0 ? (
+              <div className="mt-2 space-y-1">
+                {Object.entries(expenseStats.approvedByCurrency).map(([cur, amt]) => (
+                  <p key={cur} className="text-sm text-[var(--chalk)]">
+                    <span className="font-mono text-[rgba(165,209,177,0.84)]">{cur}</span>{" "}
+                    {(amt as number).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </p>
+                ))}
+                <div className="mt-2 border-t border-white/10 pt-2">
+                  <p className="text-xs uppercase tracking-[0.06em] text-[var(--muted)]">Total in {expenseStats.baseCurrency}</p>
+                  <p className="text-xl font-semibold text-[var(--chalk)]">
+                    {expenseStats.baseCurrency} {expenseStats.approvedTotalConverted.toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{expenseStats.baseCurrency} 0</p>
+            )}
           </article>
         </section>
 

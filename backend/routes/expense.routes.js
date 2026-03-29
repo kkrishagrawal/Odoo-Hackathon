@@ -16,4 +16,6 @@ router.post("/:id/submit", requireRole("employee"), expenseController.submit);
 router.get("/approvals", requireRole("manager"), expenseController.listApprovals);
 router.post("/:id/approve", requireRole("manager"), expenseController.approve);
 
+router.get("/stats", requireRole("admin"), expenseController.companySummary);
+
 module.exports = router;

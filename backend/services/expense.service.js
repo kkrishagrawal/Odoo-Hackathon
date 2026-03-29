@@ -284,6 +284,105 @@ async function approveExpenseAsManager(managerId, companyId, expenseId) {
   return mapExpense(approvedExpense);
 }
 
+async function getCompanyExpenseStats(companyId) {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { baseCurrency: true },
+  });
+
+  if (!company) {
+    throw new AppError(404, "Company not found", "COMPANY_NOT_FOUND");
+  }
+
+  const baseCurrency = company.baseCurrency;
+
+  const expenses = await prisma.expense.findMany({
+    where: {
+      user: { companyId },
+    },
+    select: {
+      amount: true,
+      currency: true,
+      status: true,
+    },
+  });
+
+  // Build per-currency breakdowns
+  const pendingByCurrency = {};
+  const approvedByCurrency = {};
+
+  for (const exp of expenses) {
+    const cur = exp.currency.trim();
+
+    if (PENDING_APPROVAL_STATUSES.includes(exp.status)) {
+      pendingByCurrency[cur] = (pendingByCurrency[cur] || 0) + exp.amount;
+    } else if (exp.status === "Approved") {
+      approvedByCurrency[cur] = (approvedByCurrency[cur] || 0) + exp.amount;
+    }
+  }
+
+  // Collect all unique currencies that need conversion
+  const allCurrencies = [
+    ...new Set([
+      ...Object.keys(pendingByCurrency),
+      ...Object.keys(approvedByCurrency),
+    ]),
+  ];
+
+  // Fetch exchange rates for the base currency
+  let rates = {};
+  if (allCurrencies.length > 0) {
+    try {
+      const apiKey = process.env.EXCHANGE_RATE_API_KEY;
+      const response = await fetch(
+        `https://v6.exchangerate-api.com/v6/${apiKey}/latest/${baseCurrency}`
+      );
+      const data = await response.json();
+
+      if (data.result === "success") {
+        rates = data.conversion_rates;
+      }
+    } catch (_err) {
+      // If API fails, rates stay empty — conversion will use 1:1 fallback
+    }
+  }
+
+  // Convert each currency amount to baseCurrency
+  function convertToBase(amount, fromCurrency) {
+    if (fromCurrency === baseCurrency) {
+      return amount;
+    }
+
+    const fromRate = rates[fromCurrency];
+    if (!fromRate || fromRate === 0) {
+      return amount; // fallback: 1:1
+    }
+
+    // rates are FROM baseCurrency → fromCurrency
+    // so to convert FROM fromCurrency → baseCurrency: amount / fromRate
+    return amount / fromRate;
+  }
+
+  let pendingTotalConverted = 0;
+  let approvedTotalConverted = 0;
+
+  for (const [cur, amt] of Object.entries(pendingByCurrency)) {
+    pendingTotalConverted += convertToBase(amt, cur);
+  }
+
+  for (const [cur, amt] of Object.entries(approvedByCurrency)) {
+    approvedTotalConverted += convertToBase(amt, cur);
+  }
+
+  return {
+    baseCurrency,
+    pendingByCurrency,
+    approvedByCurrency,
+    pendingTotalConverted: Math.round(pendingTotalConverted * 100) / 100,
+    approvedTotalConverted: Math.round(approvedTotalConverted * 100) / 100,
+  };
+}
+
 module.exports = {
   listUserExpenses,
   createExpense,
@@ -291,4 +390,5 @@ module.exports = {
   submitExpense,
   listManagerApprovalExpenses,
   approveExpenseAsManager,
+  getCompanyExpenseStats,
 };

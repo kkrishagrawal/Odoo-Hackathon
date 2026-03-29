@@ -114,6 +114,11 @@ const approve = asyncHandler(async (req, res) => {
   });
 });
 
+const companySummary = asyncHandler(async (req, res) => {
+  const stats = await expenseService.getCompanyExpenseStats(req.auth.companyId);
+  res.status(200).json({ stats });
+});
+
 module.exports = {
   list,
   listApprovals,
@@ -121,4 +126,5 @@ module.exports = {
   update,
   submit,
   approve,
+  companySummary,
 };
