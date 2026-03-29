@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0f1318;
+  --panel: #151a21;
+  --chalk: #e6eaef;
+  --muted: #99a4b3;
+  --accent: #8aa0ba;
+  --danger: #d4a0a0;
+  --ok: #95b69c;
+}
+
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--chalk);
+  --font-sans: var(--font-body);
+}
+
+body {
+  background:
+    radial-gradient(circle at 15% 8%, rgba(138, 160, 186, 0.12), transparent 34%),
+    repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent 49px,
+      rgba(255, 255, 255, 0.018) 49px,
+      rgba(255, 255, 255, 0.018) 50px
+    ),
+    var(--bg);
+  color: var(--chalk);
+  font-family: var(--font-body), sans-serif;
+}
+
+.chalk-title {
+  font-family: var(--font-heading), cursive;
+  letter-spacing: 0.5px;
+}
+
+.auth-shell {
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+}
+
+.auth-grid {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 960px) {
+  .auth-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.auth-card {
+  background: linear-gradient(180deg, rgba(20, 26, 33, 0.95), rgba(14, 19, 24, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 1.5rem;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+}
+
+.field {
+  margin-top: 0.75rem;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--chalk);
+  font-size: 0.95rem;
+}
+
+.field-input {
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(7, 10, 14, 0.74);
+  border-radius: 0.65rem;
+  color: var(--chalk);
+  padding: 0.65rem 0.8rem;
+  outline: none;
+  transition: border-color 120ms ease, transform 120ms ease;
+}
+
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(138, 160, 186, 0.2);
+}
+
+.btn-primary {
+  width: 100%;
+  margin-top: 1.15rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(138, 160, 186, 0.45);
+  background: linear-gradient(180deg, rgba(138, 160, 186, 0.25), rgba(138, 160, 186, 0.14));
+  color: var(--chalk);
+  padding: 0.62rem 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.btn-primary:hover:enabled {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status-error {
+  margin-top: 0.75rem;
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+.status-ok {
+  margin-top: 0.75rem;
+  color: var(--ok);
+  font-size: 0.9rem;
+}
+
+.auth-link {
+  color: var(--chalk);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.auth-link:hover {
+  color: var(--accent);
+}
