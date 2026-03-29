@@ -1,16 +1,10 @@
 "use client";
 
-import { useRef, useState, useCallback, FormEvent } from "react";
-import { apiFetch } from "../../lib/api";
+import { useRef, useState, useCallback, useEffect, FormEvent } from "react";
+import { apiFetch, ApiError, AuthUser } from "../../lib/api";
 
 /* ── Types ── */
 type ExpenseStatus = "Draft" | "Submitted" | "Waiting Approval" | "Approved";
-
-type ApprovalEntry = {
-  approver: string;
-  status: string;
-  time: string;
-};
 
 type Expense = {
   id: string;
@@ -24,7 +18,6 @@ type Expense = {
   currency: string;
   status: ExpenseStatus;
   receiptUrl: string;
-  approvalHistory: ApprovalEntry[];
 };
 
 const CATEGORIES = [
@@ -53,10 +46,6 @@ const EMPTY_FORM = {
 };
 
 /* ── Helpers ── */
-function uid() {
-  return Math.random().toString(36).slice(2, 10);
-}
-
 function formatCurrency(amount: number, currency: string) {
   try {
     return new Intl.NumberFormat("en-IN", {
@@ -89,12 +78,16 @@ function statusBadgeClass(status: ExpenseStatus) {
 /*  Component                                    */
 /* ──────────────────────────────────────────── */
 export default function EmployeeDashboard() {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
 
   /* dialog state */
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   /* loading indicators */
   const [ocrLoading, setOcrLoading] = useState(false);
@@ -103,6 +96,40 @@ export default function EmployeeDashboard() {
   /* hidden file inputs */
   const ocrFileRef = useRef<HTMLInputElement>(null);
   const receiptFileRef = useRef<HTMLInputElement>(null);
+
+  /* ── Load user + expenses on mount ── */
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        const meRes = await apiFetch<{ user: AuthUser }>("/auth/me", { method: "GET" });
+        const expRes = await apiFetch<{ expenses: Expense[] }>("/expenses", {
+          method: "GET",
+        });
+
+        if (isMounted) {
+          setUser(meRes.user);
+          setExpenses(expRes.expenses);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const msg =
+            err instanceof ApiError
+              ? err.message
+              : "Failed to load expenses.";
+          setPageError(msg);
+        }
+      } finally {
+        if (isMounted) setPageLoading(false);
+      }
+    }
+
+    loadData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   /* ── Derived summary ── */
   const totalDraft = expenses
@@ -249,8 +276,8 @@ export default function EmployeeDashboard() {
     []
   );
 
-  /* ── Save expense ── */
-  function handleSave(event: FormEvent) {
+  /* ── Save expense (create or update via API) ── */
+  async function handleSave(event: FormEvent) {
     event.preventDefault();
 
     const parsed = parseFloat(form.amount);
@@ -259,76 +286,92 @@ export default function EmployeeDashboard() {
       return;
     }
 
-    if (editingId) {
-      setExpenses((prev) =>
-        prev.map((e) =>
-          e.id === editingId
-            ? {
-                ...e,
-                description: form.description,
-                expenseDate: form.expenseDate,
-                category: form.category,
-                paidBy: form.paidBy,
-                amount: parsed,
-                currency: form.currency,
-                remarks: form.remarks,
-                receiptUrl: form.receiptUrl,
-              }
-            : e
-        )
+    const payload = {
+      description: form.description,
+      expenseDate: form.expenseDate,
+      category: form.category,
+      paidBy: form.paidBy,
+      amount: parsed,
+      currency: form.currency,
+      remarks: form.remarks,
+      receiptUrl: form.receiptUrl,
+    };
+
+    setSaving(true);
+    try {
+      if (editingId) {
+        const res = await apiFetch<{ expense: Expense }>(`/expenses/${editingId}`, {
+          method: "PATCH",
+          body: payload,
+        });
+        setExpenses((prev) =>
+          prev.map((e) => (e.id === editingId ? res.expense : e))
+        );
+      } else {
+        const res = await apiFetch<{ expense: Expense }>("/expenses", {
+          method: "POST",
+          body: payload,
+        });
+        setExpenses((prev) => [res.expense, ...prev]);
+      }
+      closeDialog();
+    } catch (err) {
+      alert(
+        "Save failed. " + (err instanceof Error ? err.message : "Please try again.")
       );
-    } else {
-      const newExpense: Expense = {
-        id: uid(),
-        employee: "You",
-        description: form.description,
-        expenseDate: form.expenseDate,
-        category: form.category,
-        paidBy: form.paidBy,
-        remarks: form.remarks,
-        amount: parsed,
-        currency: form.currency,
-        status: "Draft",
-        receiptUrl: form.receiptUrl,
-        approvalHistory: [],
-      };
-      setExpenses((prev) => [newExpense, ...prev]);
+    } finally {
+      setSaving(false);
     }
-    closeDialog();
   }
 
-  /* ── Submit (Draft → Submitted) ── */
-  function handleSubmitExpense(id: string) {
-    setExpenses((prev) =>
-      prev.map((e) =>
-        e.id === id
-          ? {
-              ...e,
-              status: "Submitted" as ExpenseStatus,
-              approvalHistory: [
-                ...e.approvalHistory,
-                {
-                  approver: "—",
-                  status: "Submitted",
-                  time: new Date().toLocaleString("en-IN", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  }),
-                },
-              ],
-            }
-          : e
-      )
-    );
+  /* ── Submit (Draft → Submitted via API) ── */
+  async function handleSubmitExpense(id: string) {
+    try {
+      const res = await apiFetch<{ expense: Expense }>(`/expenses/${id}/submit`, {
+        method: "POST",
+      });
+      setExpenses((prev) =>
+        prev.map((e) => (e.id === id ? res.expense : e))
+      );
+    } catch (err) {
+      alert(
+        "Submit failed. " + (err instanceof Error ? err.message : "Please try again.")
+      );
+    }
   }
 
   /* ── Current status for dialog flow indicator ── */
   const currentStatus: ExpenseStatus = editingId
     ? expenses.find((e) => e.id === editingId)?.status ?? "Draft"
     : "Draft";
+
+  /* ──────────────────────── LOADING / ERROR ──────────────────────── */
+  if (pageLoading) {
+    return (
+      <main className="min-h-dvh px-4 py-8 lg:py-12">
+        <div className="mx-auto w-full max-w-[1100px]">
+          <div className="empty-state">
+            <span className="spinner" /> Loading expenses…
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <main className="min-h-dvh px-4 py-8 lg:py-12">
+        <div className="mx-auto w-full max-w-[1100px]">
+          <div className="empty-state">
+            <p className="status-error">{pageError}</p>
+            <a href="/signin" className="auth-link mt-3 inline-block">
+              Go to sign in
+            </a>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   /* ──────────────────────── JSX ──────────────────────── */
   return (
@@ -341,6 +384,11 @@ export default function EmployeeDashboard() {
               EMPLOYEE VIEW
             </p>
             <h1 className="chalk-title mt-1 text-3xl lg:text-4xl">My Expenses</h1>
+            {user && (
+              <p className="mt-1 text-sm text-(--muted)">
+                {user.fullName} · {user.company.name}
+              </p>
+            )}
           </div>
 
           <div className="btn-group">
@@ -706,51 +754,17 @@ export default function EmployeeDashboard() {
                 />
               </div>
 
-              {/* Approval History (if editing an existing expense) */}
-              {editingId && (
-                <div className="mt-2">
-                  <p className="mb-1 text-xs font-bold uppercase tracking-wide text-(--muted)">
-                    Approval History
-                  </p>
-                  {(() => {
-                    const exp = expenses.find((e) => e.id === editingId);
-                    if (!exp || exp.approvalHistory.length === 0) {
-                      return (
-                        <p className="text-xs text-(--muted)">
-                          No approvals yet.
-                        </p>
-                      );
-                    }
-                    return (
-                      <table className="approval-table">
-                        <thead>
-                          <tr>
-                            <th>Approver</th>
-                            <th>Status</th>
-                            <th>Time</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {exp.approvalHistory.map((a, i) => (
-                            <tr key={i}>
-                              <td>{a.approver}</td>
-                              <td>{a.status}</td>
-                              <td>{a.time}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    );
-                  })()}
-                </div>
-              )}
-
               <button
                 id="btn-save-expense"
                 type="submit"
                 className="btn-primary mt-2"
+                disabled={saving}
               >
-                {editingId ? "Save Changes" : "Add Expense"}
+                {saving
+                  ? "Saving…"
+                  : editingId
+                  ? "Save Changes"
+                  : "Add Expense"}
               </button>
             </form>
           </div>

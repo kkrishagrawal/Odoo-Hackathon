@@ -16,7 +16,7 @@ function getDashboardPath(role: AuthUser["role"]) {
   }
 
   if (role === "employee") {
-    return "/employee-dashboard";
+    return "/employee";
   }
 
   return "/manager-dashboard";

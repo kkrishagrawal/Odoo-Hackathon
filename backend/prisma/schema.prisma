@@ -34,6 +34,7 @@ model User {
   company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
+  expenses            Expense[]
 
   @@index([companyId], map: "users_company_id_idx")
   @@map("users")
@@ -66,4 +67,26 @@ model PasswordResetToken {
 
   @@index([tokenHash], map: "password_reset_tokens_token_hash_idx")
   @@map("password_reset_tokens")
+}
+
+model Expense {
+  id          String   @id @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  description String
+  expenseDate String   @map("expense_date")
+  category    String
+  paidBy      String   @default("") @map("paid_by")
+  remarks     String   @default("")
+  amount      Float
+  currency    String   @db.Char(3)
+  status      String   @default("Draft")
+  receiptUrl  String   @default("") @map("receipt_url")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], map: "expenses_user_id_idx")
+  @@index([status], map: "expenses_status_idx")
+  @@map("expenses")
 }

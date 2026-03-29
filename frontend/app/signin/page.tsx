@@ -28,7 +28,7 @@ function getRoleDashboardPath(role: RoleOption) {
   }
 
   if (role === "employee") {
-    return "/employee-dashboard";
+    return "/employee";
   }
 
   return "/admin-dashboard";
