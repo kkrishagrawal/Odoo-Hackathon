@@ -17,6 +17,7 @@ model Company {
   updatedAt    DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
   users User[]
+  approvalRules ApprovalRule[]
 
   @@map("companies")
 }
@@ -34,10 +35,57 @@ model User {
   company             Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
   refreshTokens       RefreshToken[]
   passwordResetTokens PasswordResetToken[]
+  approvalRules       ApprovalRule[]       @relation("ApprovalRuleTargetUser")
+  managerRules        ApprovalRule[]       @relation("ApprovalRuleManagerUser")
+  createdRules        ApprovalRule[]       @relation("ApprovalRuleCreatedBy")
+  approverRules       ApprovalRuleApprover[] @relation("ApprovalRuleApproverUser")
   expenses            Expense[]
 
   @@index([companyId], map: "users_company_id_idx")
   @@map("users")
+}
+
+model ApprovalRule {
+  id                     String   @id @db.Uuid
+  companyId              String   @map("company_id") @db.Uuid
+  targetUserId           String   @map("target_user_id") @db.Uuid
+  managerUserId          String?  @map("manager_user_id") @db.Uuid
+  createdByUserId        String   @map("created_by_user_id") @db.Uuid
+  description            String?
+  includeManagerApprover Boolean  @default(true) @map("include_manager_approver")
+  requireSequential      Boolean  @default(false) @map("require_sequential")
+  minimumApprovalPercent Int      @default(100) @map("minimum_approval_percent")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  company       Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  targetUser    User                   @relation("ApprovalRuleTargetUser", fields: [targetUserId], references: [id], onDelete: Cascade)
+  managerUser   User?                  @relation("ApprovalRuleManagerUser", fields: [managerUserId], references: [id], onDelete: SetNull)
+  createdByUser User                   @relation("ApprovalRuleCreatedBy", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  approvers     ApprovalRuleApprover[]
+
+  @@index([companyId], map: "approval_rules_company_id_idx")
+  @@index([targetUserId], map: "approval_rules_target_user_id_idx")
+  @@index([managerUserId], map: "approval_rules_manager_user_id_idx")
+  @@unique([companyId, targetUserId], map: "approval_rules_company_target_user_unique_idx")
+  @@map("approval_rules")
+}
+
+model ApprovalRuleApprover {
+  id             String   @id @db.Uuid
+  approvalRuleId String   @map("approval_rule_id") @db.Uuid
+  approverUserId String   @map("approver_user_id") @db.Uuid
+  isRequired     Boolean  @default(false) @map("is_required")
+  sortOrder      Int      @default(0) @map("sort_order")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  approvalRule ApprovalRule @relation(fields: [approvalRuleId], references: [id], onDelete: Cascade)
+  approverUser User         @relation("ApprovalRuleApproverUser", fields: [approverUserId], references: [id], onDelete: Cascade)
+
+  @@index([approvalRuleId], map: "approval_rule_approvers_rule_id_idx")
+  @@index([approverUserId], map: "approval_rule_approvers_approver_user_id_idx")
+  @@unique([approvalRuleId, approverUserId], map: "approval_rule_approvers_rule_approver_unique_idx")
+  @@map("approval_rule_approvers")
 }
 
 model RefreshToken {
