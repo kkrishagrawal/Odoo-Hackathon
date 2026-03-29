@@ -6,11 +6,14 @@ const { requireRole } = require("../middleware/role.middleware");
 
 const router = express.Router();
 
-router.use(requireAuth, requireRole("employee"));
+router.use(requireAuth);
 
-router.get("/", expenseController.list);
-router.post("/", expenseController.create);
-router.patch("/:id", expenseController.update);
-router.post("/:id/submit", expenseController.submit);
+router.get("/", requireRole("employee"), expenseController.list);
+router.post("/", requireRole("employee"), expenseController.create);
+router.patch("/:id", requireRole("employee"), expenseController.update);
+router.post("/:id/submit", requireRole("employee"), expenseController.submit);
+
+router.get("/approvals", requireRole("manager"), expenseController.listApprovals);
+router.post("/:id/approve", requireRole("manager"), expenseController.approve);
 
 module.exports = router;

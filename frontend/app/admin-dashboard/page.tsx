@@ -173,6 +173,24 @@ export default function AdminDashboardPage() {
     [ruleTargetUserId, rules]
   );
 
+  const ruleByTargetUserId = useMemo(
+    () => new Map(rules.map((rule) => [rule.targetUser.id, rule])),
+    [rules]
+  );
+
+  const dashboardStats = useMemo(() => {
+    const managerCount = teamUsers.filter((teamUser) => teamUser.role === "manager").length;
+    const employeeCount = teamUsers.filter((teamUser) => teamUser.role === "employee").length;
+    const usersWithRuleCount = teamUsers.filter((teamUser) => ruleByTargetUserId.has(teamUser.id)).length;
+
+    return {
+      managerCount,
+      employeeCount,
+      usersWithRuleCount,
+      usersWithoutRuleCount: Math.max(0, teamUsers.length - usersWithRuleCount),
+    };
+  }, [ruleByTargetUserId, teamUsers]);
+
   const findFirstManagerCandidate = useCallback(
     (excludeIds: string[] = []) => managerUsers.find((teamUser) => !excludeIds.includes(teamUser.id))?.id || "",
     [managerUsers]
@@ -615,16 +633,16 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <main className="min-h-dvh px-4 py-10 lg:py-14">
-      <div className="mx-auto grid w-full max-w-[1080px] gap-4">
-        <section className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+    <main className="min-h-dvh bg-[radial-gradient(circle_at_top_right,rgba(138,160,186,0.15),transparent_45%)] px-4 py-10 lg:py-14">
+      <div className="mx-auto grid w-full max-w-[1140px] gap-5">
+        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(18,22,29,0.97),rgba(11,15,20,0.99))] p-6 shadow-[0_18px_36px_rgba(0,0,0,0.34)] lg:p-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-bold tracking-[0.09em] text-[var(--muted)]">ADMIN VIEW</p>
-              <h1 className="mt-2 text-[clamp(1.55rem,2vw,2rem)] font-semibold leading-tight text-[var(--chalk)]">
+              <h1 className="mt-2 text-[clamp(1.7rem,2.4vw,2.25rem)] font-semibold leading-tight text-[var(--chalk)]">
                 Approval rules and team access
               </h1>
-              <p className="mt-2 text-sm text-[var(--muted)]">
+              <p className="mt-2 max-w-[70ch] text-sm text-[var(--muted)]">
                 Create managers and employees, send credentials instantly, and define how requests are approved.
               </p>
             </div>
@@ -637,16 +655,19 @@ export default function AdminDashboardPage() {
             </button>
           </div>
 
-          <div className="mt-4 grid gap-2 text-sm text-[var(--chalk)] sm:grid-cols-2 lg:grid-cols-3">
-            <p>
-              <strong>Admin:</strong> {user.fullName}
-            </p>
-            <p>
-              <strong>Company:</strong> {user.company.name}
-            </p>
-            <p>
-              <strong>Base currency:</strong> {user.company.baseCurrency}
-            </p>
+          <div className="mt-5 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.62)] px-4 py-3 text-[var(--chalk)]">
+              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Admin</p>
+              <p className="mt-1 font-medium">{user.fullName}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.62)] px-4 py-3 text-[var(--chalk)]">
+              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Company</p>
+              <p className="mt-1 font-medium">{user.company.name}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.62)] px-4 py-3 text-[var(--chalk)]">
+              <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Base Currency</p>
+              <p className="mt-1 font-medium">{user.company.baseCurrency}</p>
+            </div>
           </div>
 
           <div className="mt-5 rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
@@ -657,18 +678,42 @@ export default function AdminDashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <article className="rounded-2xl border border-white/10 bg-[rgba(12,16,22,0.9)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Managers</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.managerCount}</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-[rgba(12,16,22,0.9)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[var(--muted)]">Employees</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.employeeCount}</p>
+          </article>
+          <article className="rounded-2xl border border-[rgba(114,176,134,0.38)] bg-[rgba(15,32,25,0.58)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[rgba(165,209,177,0.84)]">Users with Rules</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.usersWithRuleCount}</p>
+          </article>
+          <article className="rounded-2xl border border-[rgba(237,176,97,0.35)] bg-[rgba(47,34,18,0.5)] p-4 shadow-[0_10px_24px_rgba(0,0,0,0.24)]">
+            <p className="text-xs uppercase tracking-[0.08em] text-[rgba(237,202,141,0.85)]">Users without Rules</p>
+            <p className="mt-2 text-2xl font-semibold text-[var(--chalk)]">{dashboardStats.usersWithoutRuleCount}</p>
+          </article>
+        </section>
+
+        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h2 className="text-lg font-semibold text-[var(--chalk)]">Approval rules</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Click any user row in Managed users to open the approval-rule dialog for that user.
           </p>
 
-          <div className="mt-4 rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
-            Select a user in the table below to configure approvals in a popup dialog.
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
+              Select a user in the table below to configure approvals in a popup dialog.
+            </div>
+            <div className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm text-[var(--muted)]">
+              Rule coverage is visible in the Managed users table, so you can quickly identify users without an active flow.
+            </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h2 className="text-lg font-semibold text-[var(--chalk)]">Saved approval rules</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Each user can have one active approval rule. Remove and recreate to adjust ownership.
@@ -683,7 +728,7 @@ export default function AdminDashboardPage() {
               {rules.map((rule) => (
                 <article
                   key={rule.id}
-                  className="rounded-xl border border-white/10 bg-[rgba(8,11,15,0.65)] p-4 text-sm"
+                  className="rounded-xl border border-white/10 bg-[linear-gradient(180deg,rgba(15,19,25,0.92),rgba(10,13,18,0.88))] p-4 text-sm shadow-[0_10px_24px_rgba(0,0,0,0.2)]"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -702,7 +747,7 @@ export default function AdminDashboardPage() {
                     </button>
                   </div>
 
-                  <div className="mt-3 grid gap-2 text-[var(--muted)] sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="mt-3 grid gap-2 text-[var(--muted)] sm:grid-cols-2 lg:grid-cols-4">
                     <p>
                       <strong className="text-[var(--chalk)]">Manager:</strong>{" "}
                       {rule.managerUser ? rule.managerUser.fullName : "-"}
@@ -714,6 +759,9 @@ export default function AdminDashboardPage() {
                     <p>
                       <strong className="text-[var(--chalk)]">Minimum approval:</strong>{" "}
                       {rule.minimumApprovalPercent}%
+                    </p>
+                    <p>
+                      <strong className="text-[var(--chalk)]">Approvers:</strong> {rule.approvers.length}
                     </p>
                   </div>
 
@@ -738,7 +786,7 @@ export default function AdminDashboardPage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h2 className="text-lg font-semibold text-[var(--chalk)]">Create user</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Add a manager or employee. Their login credentials will be sent to their email.
@@ -830,7 +878,7 @@ export default function AdminDashboardPage() {
           {createError ? <p className="mt-2 text-sm text-rose-300">{createError}</p> : null}
         </section>
 
-        <section className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
+        <section className="rounded-3xl border border-white/10 bg-[linear-gradient(180deg,rgba(16,20,26,0.96),rgba(13,17,22,0.98))] p-6 shadow-[0_14px_30px_rgba(0,0,0,0.28)]">
           <h2 className="text-lg font-semibold text-[var(--chalk)]">Managed users</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">
             Click a user row to open the approval-rule dialog. Use Send password to rotate credentials and email updated login access.
@@ -842,6 +890,7 @@ export default function AdminDashboardPage() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Role</th>
+                  <th className="px-4 py-3 font-medium">Rule</th>
                   <th className="px-4 py-3 font-medium">Email</th>
                   <th className="px-4 py-3 font-medium">Created</th>
                   <th className="px-4 py-3 font-medium">Actions</th>
@@ -850,7 +899,7 @@ export default function AdminDashboardPage() {
               <tbody className="divide-y divide-white/10">
                 {teamUsers.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-4 text-[var(--muted)]" colSpan={5}>
+                    <td className="px-4 py-4 text-[var(--muted)]" colSpan={6}>
                       No manager or employee users added yet.
                     </td>
                   </tr>
@@ -863,12 +912,34 @@ export default function AdminDashboardPage() {
                     >
                       <td className="px-4 py-3">{teamUser.fullName}</td>
                       <td className="px-4 py-3 capitalize">{teamUser.role}</td>
+                      <td className="px-4 py-3">
+                        {ruleByTargetUserId.has(teamUser.id) ? (
+                          <span className="rounded-full border border-[rgba(114,176,134,0.5)] bg-[rgba(16,54,34,0.45)] px-2.5 py-1 text-[11px] font-semibold text-[rgba(184,227,196,0.95)]">
+                            Configured
+                          </span>
+                        ) : (
+                          <span className="rounded-full border border-[rgba(237,176,97,0.45)] bg-[rgba(66,44,20,0.45)] px-2.5 py-1 text-[11px] font-semibold text-[rgba(246,213,162,0.95)]">
+                            Pending
+                          </span>
+                        )}
+                      </td>
                       <td className="px-4 py-3">{teamUser.email}</td>
                       <td className="px-4 py-3 text-[var(--muted)]">
                         {new Date(teamUser.createdAt).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            className="rounded-md border border-[rgba(138,160,186,0.5)] bg-[linear-gradient(180deg,rgba(138,160,186,0.24),rgba(138,160,186,0.14))] px-3 py-1.5 text-xs font-semibold text-[var(--chalk)] transition hover:enabled:-translate-y-px hover:enabled:brightness-105"
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              openRuleDialogForUser(teamUser.id);
+                            }}
+                            disabled={sendingForUserId === teamUser.id || removingForUserId === teamUser.id}
+                          >
+                            Configure rule
+                          </button>
                           <button
                             className="rounded-md border border-white/15 bg-[rgba(8,11,15,0.75)] px-3 py-1.5 text-xs font-semibold text-[var(--chalk)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
                             type="button"

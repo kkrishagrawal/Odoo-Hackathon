@@ -59,6 +59,15 @@ const list = asyncHandler(async (req, res) => {
   res.status(200).json({ expenses });
 });
 
+const listApprovals = asyncHandler(async (req, res) => {
+  const expenses = await expenseService.listManagerApprovalExpenses(
+    req.auth.userId,
+    req.auth.companyId
+  );
+
+  res.status(200).json({ expenses });
+});
+
 const create = asyncHandler(async (req, res) => {
   const payload = parseBody(expenseBodySchema, req.body);
   const expense = await expenseService.createExpense(req.auth.userId, payload);
@@ -91,9 +100,25 @@ const submit = asyncHandler(async (req, res) => {
   });
 });
 
+const approve = asyncHandler(async (req, res) => {
+  const params = parseBody(idParamSchema, req.params);
+  const expense = await expenseService.approveExpenseAsManager(
+    req.auth.userId,
+    req.auth.companyId,
+    params.id
+  );
+
+  res.status(200).json({
+    message: "Expense approved successfully",
+    expense,
+  });
+});
+
 module.exports = {
   list,
+  listApprovals,
   create,
   update,
   submit,
+  approve,
 };

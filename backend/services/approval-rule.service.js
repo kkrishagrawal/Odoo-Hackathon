@@ -253,7 +253,7 @@ async function createApprovalRule({ requesterId, companyId, input }) {
       targetUserId: input.targetUserId,
       managerUserId: input.managerUserId || null,
       createdByUserId: requesterId,
-      description: input.description || null,
+      description: input.description || "",
       includeManagerApprover: input.includeManagerApprover,
       requireSequential: input.requireSequential,
       minimumApprovalPercent: input.minimumApprovalPercent,
