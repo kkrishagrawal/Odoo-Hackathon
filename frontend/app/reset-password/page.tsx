@@ -2,15 +2,19 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
+import { SubmitEvent, useMemo, useState } from "react";
+import { Suspense } from "react";
 
 import { ApiError, apiFetch } from "../../lib/api";
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const initialToken = useMemo(() => searchParams.get("token") || "", [searchParams]);
+  const initialToken = useMemo(
+    () => searchParams.get("token") || "",
+    [searchParams]
+  );
 
   const [token, setToken] = useState(initialToken);
   const [newPassword, setNewPassword] = useState("");
@@ -19,7 +23,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -32,14 +36,17 @@ export default function ResetPasswordPage() {
     setLoading(true);
 
     try {
-      const response = await apiFetch<{ message: string }>("/auth/reset-password", {
-        method: "POST",
-        body: {
-          token,
-          newPassword,
-          confirmPassword,
-        },
-      });
+      const response = await apiFetch<{ message: string }>(
+        "/auth/reset-password",
+        {
+          method: "POST",
+          body: {
+            token,
+            newPassword,
+            confirmPassword,
+          },
+        }
+      );
 
       setSuccess(response.message);
       setTimeout(() => {
@@ -57,10 +64,8 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="auth-shell">
-      <div className="auth-grid">
-        <section className="auth-card">
-          <h1 className="chalk-title text-4xl">Reset Password</h1>
+    <>
+      <h1 className="chalk-title text-4xl">Reset Password</h1>
 
           <form onSubmit={handleSubmit} className="mt-5">
             <div className="field">
@@ -113,9 +118,22 @@ export default function ResetPasswordPage() {
             </button>
           </form>
 
-          <p className="mt-5 text-sm">
-            Back to <Link className="auth-link" href="/signin">Signin</Link>
-          </p>
+      <p className="mt-5 text-sm">
+        Back to <Link className="auth-link" href="/signin">Signin</Link>
+      </p>
+    </>
+  );
+}
+
+
+export default function ResetPasswordPage() {
+  return (
+    <main className="auth-shell">
+      <div className="auth-grid">
+        <section className="auth-card">
+          <Suspense fallback={<p>Loading...</p>}>
+            <ResetPasswordForm />
+          </Suspense>
         </section>
       </div>
     </main>
