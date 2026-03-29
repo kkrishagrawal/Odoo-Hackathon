@@ -133,3 +133,370 @@ body {
 .auth-link:hover {
   color: var(--accent);
 }
+
+/* ──────────── Employee Dashboard ──────────── */
+
+:root {
+  --warning: #d4c094;
+}
+
+/* ── Summary Cards ── */
+.dash-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.dash-card {
+  background: linear-gradient(180deg, rgba(20, 26, 33, 0.92), rgba(14, 19, 24, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 180ms ease, transform 180ms ease;
+}
+
+.dash-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+  transition: opacity 180ms ease;
+}
+
+.dash-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+}
+
+.dash-card:hover::before {
+  opacity: 1;
+}
+
+.dash-card.card-warning::before {
+  background: var(--warning);
+}
+
+.dash-card.card-ok::before {
+  background: var(--ok);
+}
+
+.dash-card-label {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+}
+
+.dash-card-amount {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--chalk);
+}
+
+/* ── Action Buttons ── */
+.btn-group {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.btn-secondary {
+  border-radius: 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--chalk);
+  padding: 0.55rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-upload {
+  border-color: rgba(138, 160, 186, 0.35);
+  background: rgba(138, 160, 186, 0.08);
+}
+
+.btn-upload:hover:not(:disabled) {
+  background: rgba(138, 160, 186, 0.16);
+  border-color: rgba(138, 160, 186, 0.5);
+}
+
+/* ── Expense Table ── */
+.dash-table-wrap {
+  overflow-x: auto;
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dash-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.dash-table th {
+  text-align: left;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: rgba(7, 10, 14, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dash-table td {
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--chalk);
+  white-space: nowrap;
+}
+
+.dash-table tbody tr {
+  transition: background 120ms ease;
+}
+
+.dash-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.dash-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ── Status Badges ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge-draft {
+  background: rgba(153, 164, 179, 0.14);
+  color: var(--muted);
+}
+
+.badge-submitted {
+  background: rgba(138, 160, 186, 0.18);
+  color: var(--accent);
+}
+
+.badge-waiting {
+  background: rgba(212, 192, 148, 0.16);
+  color: var(--warning);
+}
+
+.badge-approved {
+  background: rgba(149, 182, 156, 0.16);
+  color: var(--ok);
+}
+
+/* ── Dialog ── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 180ms ease;
+}
+
+.dialog-panel {
+  width: min(620px, 100%);
+  max-height: 90dvh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(18, 23, 30, 0.98), rgba(12, 16, 21, 0.99));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1.25rem;
+  padding: 1.75rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: slideUp 220ms ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.dialog-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--chalk);
+}
+
+.dialog-close {
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.dialog-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--chalk);
+}
+
+/* ── Status Flow ── */
+.status-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.status-flow-step {
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all 180ms ease;
+}
+
+.status-flow-step.active {
+  background: rgba(138, 160, 186, 0.18);
+  border-color: rgba(138, 160, 186, 0.35);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.status-flow-arrow {
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* ── Receipt link ── */
+.receipt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 120ms ease;
+  word-break: break-all;
+}
+
+.receipt-link:hover {
+  color: var(--chalk);
+}
+
+/* ── Form grid ── */
+.form-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+@media (max-width: 500px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Approval History ── */
+.approval-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+}
+
+.approval-table th {
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.approval-table td {
+  padding: 0.45rem 0.65rem;
+  color: var(--chalk);
+}
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

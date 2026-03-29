@@ -20,6 +20,10 @@ const envSchema = z.object({
   SMTP_FROM: z.string().email().optional(),
   SMTP_SECURE: z.enum(["true", "false"]).default("false"),
   SMTP_USE_JSON_TRANSPORT: z.enum(["true", "false"]).default("false"),
+  GEMINI_API_KEY: z.string().min(1),
+  CLOUDINARY_CLOUD_NAME: z.string().min(1),
+  CLOUDINARY_API_KEY: z.string().min(1),
+  CLOUDINARY_API_SECRET: z.string().min(1),
 });
 
 const parsed = envSchema.safeParse(process.env);
